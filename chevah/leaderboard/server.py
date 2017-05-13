@@ -3,6 +3,7 @@ This is the entry point of the server.
 """
 from __future__ import absolute_import, unicode_literals
 import os
+from datetime import datetime
 
 from klein import resource, route
 from twisted.web.static import File
@@ -22,7 +23,8 @@ def highscores_handler(request):
 
     request.setHeader(b'content-type', b'text/html; charset=utf-8')
     if 'time' in request.args:
-        t = highscores.parsetime(request.args['time'][0])
+        y, m, d = map(int, request.args['time'][0].split("-"))
+        t = highscores.Time.fromDatetime(datetime(year=y, month=m, day=d))
     else:
         t = highscores.Time()
 

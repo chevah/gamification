@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 #
-#
+# Based on the code from https://twistedmatrix.com/highscores/
 #
 
 import sqlite3
@@ -8,7 +8,7 @@ import os
 from re import split
 from itertools import chain, count, groupby
 from operator import itemgetter
-from datetime import timedelta, datetime
+from datetime import timedelta
 
 
 from twisted.web.template import Element, XMLFile, renderer, tags, flatten
@@ -32,10 +32,10 @@ IGNORED_AUTHORS = [
 
 
 AUTHOR_ALIASES = {
-    'adi': ['adiroiban'],
-    'hcs': ['hcs0'],
+    'adi': ['adiroiban', 'adi roiban'],
+    'hcs': ['hcs0', 'Hannah Suarez hcs0'],
     'laura': ['laurici'],
-    'dumol': ['Mișu Moldovan'],
+    'dumol': ['mișu moldovan'],
     'alibotean': [],
     'bgola': [],
     }
@@ -70,15 +70,16 @@ def deffactor(score, description):
     return key
 
 # You can enter tags (tags.br()) in the description as this is sent to HTML.
-BUG_TICKET = deffactor(500, "creating a bug ticket")
-DONE_REVIEW = deffactor(200, "complete a review")
+BUG_TICKET = deffactor(400, "creating a bug ticket")
+DONE_REVIEW = deffactor(200, "doing a review")
+CARPE_DIEM_COMMIT = deffactor(100, "enjoying a simple commit")
 NEEDS_REVIEW = deffactor(75, "submitting a ticket for review")
 FIXED = deffactor(75, "solving a ticket")
 WIKI_EDIT = deffactor(50, "wiki changes")
 CREATE_TICKET = deffactor(50, "creating a ticket")
 IRC_COMMENT = deffactor(50, "active on IRC in a day")
 JUST_CLOSED = deffactor(25, "closing a ticket without solving it")
-JUST_COMMENT = deffactor(10, "leaving a comment or updating the description")
+JUST_COMMENT = deffactor(10, "ticket comment or update")
 
 # How many points to get for each action from that month.
 ACTION_POINTS_RATIO = 0.1
@@ -88,6 +89,9 @@ here = FilePath(__file__)
 
 
 class HiscoresPage(Element):
+    """
+    The pages showing the scores for each team member.
+    """
     loader = XMLFile(here.sibling('static').child('highscores.html').open())
 
     def __init__(self, dateWithinMonth, scores):
@@ -112,7 +116,8 @@ class HiscoresPage(Element):
 
     @renderer
     def next(self, request, tag):
-        start, end = monthRangeAround(self.dateWithinMonth + timedelta(days=45))
+        start, end = monthRangeAround(
+            self.dateWithinMonth + timedelta(days=45))
         hidden = False
         if start > Time():
             hidden = True
@@ -121,7 +126,8 @@ class HiscoresPage(Element):
 
     @renderer
     def previous(self, request, tag):
-        start, end = monthRangeAround(self.dateWithinMonth - timedelta(hours=1))
+        start, end = monthRangeAround(
+            self.dateWithinMonth - timedelta(hours=1))
         return tag(self.linkTag(start, "left"))
 
 
@@ -184,26 +190,8 @@ class HiscoresPage(Element):
         Description of the actions which are scored.
         """
         for factor in sorted(_factors.values(), key=lambda f: f.order):
-            tag(str(factor.points), " for ", factor.description, tags.br())
+            tag(str(factor.points), " ",factor.description, tags.br())
         return tag
-
-
-def render(output, rangeStart, scores):
-    """
-    Write some score data to a callable of some kind.
-
-    @param rangeStart: A L{Time} instance giving the beginning of the time range
-        containing the given scores.
-
-    @param scores: the scores data structure as returned by getscores.
-
-    @param output: a callable that takes a C{str}; call it repeatedly to write
-        the output.
-    """
-    page = HiscoresPage(rangeStart, scores)
-    # Not requesting any asynchronous data, so we can just ignore the result of
-    # this Deferred.
-    flatten(None, page, output)
 
 
 def getscores(actions):
@@ -227,18 +215,12 @@ def getscores(actions):
     return sorted(result, reverse=True)
 
 
-def parsetime(s):
-    y, m, d = map(int, s.split("-"))
-    return Time.fromDatetime(datetime(year=y, month=m, day=d))
-
-
-
 HOW_LONG_IS_A_MONTH_I_DONT_KNOW = 27
 
 
 def monthRangeAround(t):
-    beginningdt = t.asDatetime().replace(day=1, hour=0, minute=0, second=0,
-                                         microsecond=0)
+    beginningdt = t.asDatetime().replace(
+        day=1, hour=0, minute=0, second=0, microsecond=0)
     td = timedelta(days=HOW_LONG_IS_A_MONTH_I_DONT_KNOW)
     while (beginningdt + td).month == beginningdt.month:
         td += timedelta(days=1)
@@ -247,7 +229,7 @@ def monthRangeAround(t):
     return (beginning, end)
 
 
-def getTicketChanges(start, end):
+def _getTicketChanges(start, end):
     """
     Return the changes made to the tickets.
     """
@@ -269,7 +251,7 @@ def getTicketChanges(start, end):
         con.close()
 
 
-def getNewTickets(start, end):
+def _getNewTickets(start, end):
     """
     Return the new tickets.
     """
@@ -291,7 +273,7 @@ def getNewTickets(start, end):
         con.close()
 
 
-def getOwnser(id):
+def _getOwner(id):
     """
     Return the current owner for ticket with `id`.
     """
@@ -312,7 +294,7 @@ def _getTicketActions(start, end):
     """
     Compute the actions represented by the given sequence of ticket change.
     """
-    changes = getTicketChanges(start, end)
+    changes = _getTicketChanges(start, end)
 
     for time, localChanges in groupby(changes, itemgetter(1)):
         actions = []
@@ -343,7 +325,7 @@ def _getTicketActions(start, end):
                         # The informative comment from PQM that the
                         # ticket was closed.
                         # We get the owner from the ticket owner.
-                        author = getOwnser(ticket)
+                        author = _getOwner(ticket)
                     else:
                         # Action done in GitHub. Author is the first word.
                         author = comment.split(' ', 1)[0]
@@ -370,7 +352,7 @@ def _getTicketActions(start, end):
             yield (action, author)
 
 
-    changes = getNewTickets(start, end)
+    changes = _getNewTickets(start, end)
     for ticket_type, reporter in changes:
         author = reporter.lower().strip()
         if ticket_type == 'bug':
@@ -380,7 +362,7 @@ def _getTicketActions(start, end):
         yield (action, author)
 
 
-def getWikiChanges(start, end):
+def _getWikiChanges(start, end):
     """
     Return the SQL for wiki changes.
     """
@@ -406,7 +388,7 @@ def _getWikiActions(start, end):
     """
     Compute the actions represented by the given sequence of ticket change.
     """
-    changes = getWikiChanges(start, end)
+    changes = _getWikiChanges(start, end)
 
     for change in changes:
         author = change[0]
@@ -427,8 +409,7 @@ def _getIRCActions(start):
 
 def _getIRCActionsForDay(day_path):
     """
-
-    2017-05-10T12:31:40  -GitHub54- salt-master/master 6a3c7d1 Mișu Moldovan: [#4050] Normalize links on pypi site.
+    Return the actions for a day.
     """
     day_comments = {}
 
@@ -459,15 +440,29 @@ def _getIRCActionsForDay(day_path):
 
 def _getIRCGitHubAction(line):
     """
+    Return the action for a GitHub IRC notifications
     """
-    return None
+    line = line.lower()
+    if '[carpe-diem]' not in line or '[carpe diem]' not in line:
+        # Not a carpe-diem commit.
+        # For now only carpe-diem commits are scored.
+        return None
+
+    # time  -GitHub1- repo/master a03ac Adi Roiban: [carpe-diem] Message.
+    try:
+        author = line.split(' ', 5)[5].split(':', 1)[0]
+    except IndexError:
+        return None
+
+    return (CARPE_DIEM_COMMIT, _resolveAuthor(author))
 
 
 def _getIRCCommentAuthor(line):
     """
-    Return the author for `line`.
+    Return the author from IRC `line`.
     """
     try:
+        # dateTtime  <author> some comment
         author = line.split('>', 1)[0].split('<', 1)[1]
     except IndexError:
         return None
@@ -477,8 +472,9 @@ def _getIRCCommentAuthor(line):
 
 def _resolveAuthor(alias):
     """
-    Return the well know author from the alias.
+    Return the well know author for the alias.
     """
+    alias = alias.lower()
     for global_author, aliases in AUTHOR_ALIASES.items():
         if alias in aliases:
             return global_author
@@ -508,8 +504,11 @@ def renderPage(time, output):
     start, end = monthRangeAround(time)
     actions = computeActions(start, end)
     scores = getscores(actions)
-    render(output, start, scores)
 
+    page = HiscoresPage(start, scores)
+    # Not requesting any asynchronous data, so we can just ignore the result of
+    # this Deferred.
+    flatten(None, page, output)
 
 if __name__ == '__main__':
     """
