@@ -37,4 +37,6 @@ def static(request):
     """
     All files from static.
     """
-    return File(STATIC_PATH)
+    result = File(STATIC_PATH)
+    result.contentTypes[b'.woff2'] = b'application/font-woff2'
+    return result

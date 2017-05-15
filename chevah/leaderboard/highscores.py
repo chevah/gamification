@@ -32,12 +32,12 @@ IGNORED_AUTHORS = [
 
 
 AUTHOR_ALIASES = {
-    'adi': ['adiroiban', 'adi roiban'],
-    'hcs': ['hcs0', 'Hannah Suarez hcs0'],
-    'laura': ['laurici'],
-    'dumol': ['mișu moldovan'],
-    'alibotean': [],
-    'bgola': [],
+    'adi': ['adiroiban', 'adi roiban', 'adi.roiban'],
+    'hcs': ['hcs0', 'Hannah Suarez hcs0', 'hannah.suarez'],
+    'laura': ['laurici', 'laura.gheorghiu'],
+    'dumol': ['mișu moldovan', 'misu.moldovan'],
+    'alibotean': ['adrian.libotean'],
+    'bgola': ['bruno.gola'],
     }
 
 
@@ -71,6 +71,7 @@ def deffactor(score, description):
 
 # You can enter tags (tags.br()) in the description as this is sent to HTML.
 BUG_TICKET = deffactor(400, "creating a bug ticket")
+SUPPORT_MESSAGE = deffactor(400, "sending a message to support")
 DONE_REVIEW = deffactor(200, "doing a review")
 CARPE_DIEM_COMMIT = deffactor(100, "enjoying a simple commit")
 NEEDS_REVIEW = deffactor(75, "submitting a ticket for review")
@@ -338,6 +339,12 @@ def _getTicketActions(start, end):
                     actions.append((DONE_REVIEW, author))
                 elif 'Branch landed on master' in comment:
                     actions.append((FIXED, author))
+                elif ' approved changes.' in comment:
+                    # Old GitHub Hooks comment.
+                    actions.append((DONE_REVIEW, author))
+                elif 'requested changes to this ticket.' in comment:
+                    # Old GitHub Hooks comment.
+                    actions.append((DONE_REVIEW, author))
                 else:
                     actions.append((JUST_COMMENT, author))
 
@@ -429,6 +436,14 @@ def _getIRCActionsForDay(day_path):
                 action = _getIRCGitHubAction(line)
                 if action:
                     yield action
+            elif (
+                '  -test-robi-net-' in line or
+                '  -robi-net-' in line
+                    ):
+                # A IRC-Bot hook
+                action = _getIRCBotAction(line)
+                if action:
+                    yield action
             else:
                 # Maybe is a comment from a team member.
                 author = _getIRCCommentAuthor(line)
@@ -437,6 +452,7 @@ def _getIRCActionsForDay(day_path):
     for author, count in day_comments.items():
         if count > 4:
             yield (IRC_COMMENT, author)
+
 
 def _getIRCGitHubAction(line):
     """
@@ -455,6 +471,24 @@ def _getIRCGitHubAction(line):
         return None
 
     return (CARPE_DIEM_COMMIT, _resolveAuthor(author))
+
+
+def _getIRCBotAction(line):
+    """
+    """
+    line = line.lower()
+    if ' [support-inbox][' not in line:
+        # Not a support action.
+        # For now only support actions are supported.
+        return None
+
+    # time  -test-robi-net- [support-inbox][author] Replied to: subject
+    try:
+        author = line.split('[support-inbox][',1)[1].split(']', 1)[0]
+    except IndexError:
+        return None
+
+    return (SUPPORT_MESSAGE, _resolveAuthor(author))
 
 
 def _getIRCCommentAuthor(line):
