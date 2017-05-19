@@ -13,7 +13,6 @@ the CONFIGURATION global.
 """
 import sys
 
-from twisted.python import log
 from twisted.scripts.twistd import run
 
 from chevah.leaderboard.server import CONFIGURATION

@@ -5,7 +5,6 @@
 
 import sqlite3
 import os
-from re import split
 from itertools import chain, count, groupby
 from operator import itemgetter
 from datetime import timedelta
@@ -408,7 +407,11 @@ def _getIRCActions(start):
     """
     target_month = start.asDatetime().strftime('%Y-%m-%B')
     month_path = os.path.join(CONFIGURATION['irc-logs'], target_month)
-    for (root, dirnames, filenames) in os.walk(month_path):
+
+    def fail(exception):
+        raise exception
+
+    for (root, dirnames, filenames) in os.walk(month_path, onerror=fail):
         for day in filenames:
             for action in _getIRCActionsForDay(os.path.join(root,day)):
                 yield action
@@ -449,8 +452,8 @@ def _getIRCActionsForDay(day_path):
                 author = _getIRCCommentAuthor(line)
                 update_day_comments(author)
 
-    for author, count in day_comments.items():
-        if count > 4:
+    for author, counter in day_comments.items():
+        if counter > 4:
             yield (IRC_COMMENT, author)
 
 
@@ -475,6 +478,7 @@ def _getIRCGitHubAction(line):
 
 def _getIRCBotAction(line):
     """
+    Return the action for an IRC log line.
     """
     line = line.lower()
     if ' [support-inbox][' not in line:
@@ -507,11 +511,14 @@ def _getIRCCommentAuthor(line):
 def _resolveAuthor(alias):
     """
     Return the well know author for the alias.
+
+    We will do a partial match on the alias.
     """
     alias = alias.lower()
     for global_author, aliases in AUTHOR_ALIASES.items():
-        if alias in aliases:
-            return global_author
+        for candidate in aliases:
+            if alias in candidate:
+                return global_author
 
     # No alias found.
     return alias

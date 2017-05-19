@@ -15,8 +15,8 @@ Run tests::
     nosetests
 
 
-Manual testing
---------------
+Manual testing Leaderboard
+--------------------------
 
 Check the server launch, but you can not do to many things as it needs to be
 fed with GitHub hooks and to connect to a Trac instance
@@ -24,10 +24,26 @@ fed with GitHub hooks and to connect to a Trac instance
 For highscores, you will need to place a trac.db file in build/ so that it
 will some something to work on.
 
-To launch the server use:
+To launch the Leaderboard server use:
 
-    make run
+    make leaderboard
 
 To see the report for this month:
 
     make report
+
+
+Manual testing IRC plugins
+--------------------------
+
+Do all the tests in #chevah-test to not add noise to the main channel.
+
+First you need to get the credentials, by placing the `client_id.json` in repo
+root and then run.
+
+    make irc-bot-oauth
+
+You only need to get the credentials once.
+After that you can launch the IRC bot::
+
+    make irc-bot
