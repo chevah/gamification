@@ -1,3 +1,11 @@
+0.3.0 (2017-05-19)
+==================
+
+* Have partial match when searching for author alias.
+* Raise an error when failing to walk the IRC logs.
+* Fix start script configuration.
+
+
 0.2.0 (2017-05-15)
 ==================
 

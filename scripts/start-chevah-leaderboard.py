@@ -15,7 +15,7 @@ import sys
 
 from twisted.scripts.twistd import run
 
-from chevah.leaderboard.server import CONFIGURATION
+from chevah.leaderboard.highscores import CONFIGURATION
 
 
 if __name__ == '__main__':
@@ -25,7 +25,7 @@ if __name__ == '__main__':
             'Launch script with at least the path to the Trac DB.')
 
     # Pass the trac credentials in a safer way.
-    CONFIGURATION['trac-db'] = sys.argv[1]
+    CONFIGURATION['trac-db'] = (sys.argv[1],)
     CONFIGURATION['irc-logs'] = sys.argv[2]
 
     base_arguments = []

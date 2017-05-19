@@ -516,8 +516,8 @@ def _resolveAuthor(alias):
     """
     alias = alias.lower()
     for global_author, aliases in AUTHOR_ALIASES.items():
-        for candidate in aliases:
-            if alias in candidate:
+        for candidate in [global_author] + aliases:
+            if candidate in alias:
                 return global_author
 
     # No alias found.
