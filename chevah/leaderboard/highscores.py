@@ -120,7 +120,7 @@ class HiscoresPage(Element):
 
     @renderer
     def next(self, request, tag):
-        start, end = monthRangeAround(
+        start, _ = monthRangeAround(
             self.dateWithinMonth + timedelta(days=45))
         hidden = False
         if start > Time():
@@ -291,7 +291,7 @@ def _getOwner(id):
     con = sqlite3.connect(*CONFIGURATION['trac-db'])
     try:
         cur = con.cursor()
-        cur.execute('select owner from ticket where id = %s' % (id,))
+        cur.execute('select owner from ticket where id = ?', (str(id),))
         result = cur.fetchall()
         owner = result[0][0]
         if not owner:
@@ -307,10 +307,10 @@ def _getTicketActions(start, end):
     """
     changes = _getTicketChanges(start, end)
 
-    for time, localChanges in groupby(changes, itemgetter(1)):
+    for _, localChanges in groupby(changes, itemgetter(1)):
         actions = []
         comment = None
-        for ticket, time, author, field, oldvalue, newvalue in localChanges:
+        for ticket, time, author, field, _, newvalue in localChanges:
 
             author = author.lower()
 
@@ -422,7 +422,7 @@ def _getIRCActions(start):
     def fail(exception):
         raise exception
 
-    for (root, dirnames, filenames) in os.walk(month_path, onerror=fail):
+    for (root, _, filenames) in os.walk(month_path, onerror=fail):
         for day in filenames:
             for action in _getIRCActionsForDay(os.path.join(root,day)):
                 yield action
@@ -563,9 +563,7 @@ def renderPage(time, output):
     flatten(None, page, output)
 
 if __name__ == '__main__':
-    """
-    Show debugging info for current month.
-    """
+    # Show debugging info for current month.
     import pprint, sys
     CONFIGURATION['trac-db'] = (sys.argv[1],)
     CONFIGURATION['irc-logs'] = sys.argv[2]
