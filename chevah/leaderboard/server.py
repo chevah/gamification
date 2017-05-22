@@ -7,11 +7,11 @@ from datetime import datetime
 
 from klein import resource, route
 from twisted.web.static import File
-# Shut up the linter.
-resource
 
 from chevah.leaderboard import highscores
 
+# Shut up the linter.
+resource  # noqa
 
 STATIC_PATH = os.path.join(os.path.dirname(__file__), 'static')
 

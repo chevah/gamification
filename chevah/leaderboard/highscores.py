@@ -44,6 +44,7 @@ AUTHOR_HANDICAP = {
     'adi': 0.66,
     }
 
+
 class Factor(dict):
     """
     A score thing.
@@ -56,6 +57,7 @@ class Factor(dict):
 # All the point types for this leaderboard.
 _factors = {}
 _nextorder = count().next
+
 
 def deffactor(score, description):
     """
@@ -102,7 +104,6 @@ class HiscoresPage(Element):
         self.dateWithinMonth = dateWithinMonth
         self.allScores = scores
 
-
     def linkTag(self, time, arrowDirection, hidden=False):
         style = LINK_STYLE
         if hidden:
@@ -117,23 +118,20 @@ class HiscoresPage(Element):
                 )
         )
 
-
     @renderer
     def next(self, request, tag):
-        start, end = monthRangeAround(
+        start, _ = monthRangeAround(
             self.dateWithinMonth + timedelta(days=45))
         hidden = False
         if start > Time():
             hidden = True
         return tag(self.linkTag(start, "right", hidden))
 
-
     @renderer
     def previous(self, request, tag):
         start, end = monthRangeAround(
             self.dateWithinMonth - timedelta(hours=1))
         return tag(self.linkTag(start, "left"))
-
 
     @renderer
     def scores(self, request, oneRowTag):
@@ -175,7 +173,6 @@ class HiscoresPage(Element):
                 handicap=handicap
                 )
 
-
     @renderer
     def action_points_ratio(self, request, tag):
         """
@@ -200,7 +197,7 @@ class HiscoresPage(Element):
         Description of the actions which are scored.
         """
         for factor in sorted(_factors.values(), key=lambda f: f.order):
-            tag(str(factor.points), " ",factor.description, tags.br())
+            tag(str(factor.points), " ", factor.description, tags.br())
         return tag
 
 
@@ -291,7 +288,7 @@ def _getOwner(id):
     con = sqlite3.connect(*CONFIGURATION['trac-db'])
     try:
         cur = con.cursor()
-        cur.execute('select owner from ticket where id = %s' % (id,))
+        cur.execute('select owner from ticket where id = ?', (str(id),))
         result = cur.fetchall()
         owner = result[0][0]
         if not owner:
@@ -307,10 +304,10 @@ def _getTicketActions(start, end):
     """
     changes = _getTicketChanges(start, end)
 
-    for time, localChanges in groupby(changes, itemgetter(1)):
+    for _, localChanges in groupby(changes, itemgetter(1)):
         actions = []
         comment = None
-        for ticket, time, author, field, oldvalue, newvalue in localChanges:
+        for ticket, time, author, field, _, newvalue in localChanges:
 
             author = author.lower()
 
@@ -368,7 +365,6 @@ def _getTicketActions(start, end):
 
             yield (action, author)
 
-
     changes = _getNewTickets(start, end)
     for ticket_type, reporter in changes:
         author = reporter.lower().strip()
@@ -422,9 +418,9 @@ def _getIRCActions(start):
     def fail(exception):
         raise exception
 
-    for (root, dirnames, filenames) in os.walk(month_path, onerror=fail):
+    for (root, _, filenames) in os.walk(month_path, onerror=fail):
         for day in filenames:
-            for action in _getIRCActionsForDay(os.path.join(root,day)):
+            for action in _getIRCActionsForDay(os.path.join(root, day)):
                 yield action
 
 
@@ -499,7 +495,7 @@ def _getIRCBotAction(line):
 
     # time  -test-robi-net- [support-inbox][author] Replied to: subject
     try:
-        author = line.split('[support-inbox][',1)[1].split(']', 1)[0]
+        author = line.split('[support-inbox][', 1)[1].split(']', 1)[0]
     except IndexError:
         return None
 
@@ -563,10 +559,9 @@ def renderPage(time, output):
     flatten(None, page, output)
 
 if __name__ == '__main__':
-    """
-    Show debugging info for current month.
-    """
-    import pprint, sys
+    # Show debugging info for current month.
+    import pprint
+    import sys
     CONFIGURATION['trac-db'] = (sys.argv[1],)
     CONFIGURATION['irc-logs'] = sys.argv[2]
     start, end = monthRangeAround(Time())

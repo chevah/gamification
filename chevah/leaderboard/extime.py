@@ -200,7 +200,6 @@ class Time(object):
         if daysInFuture == 0:
             daysInFuture = 7
         self = klass.fromDatetime(dtnow + datetime.timedelta(days=daysInFuture))
-        assert self.asDatetime().weekday() == weekday
         self.resolution = datetime.timedelta(days=1)
         return self
 
@@ -213,8 +212,10 @@ class Time(object):
             dtnow += datetime.timedelta(days=1)
         elif when == 'yesterday':
             dtnow -= datetime.timedelta(days=1)
+        elif when == 'today':
+            pass
         else:
-            assert when == 'today'
+            raise AssertionError('Expression not supported.')
         self = klass.fromDatetime(dtnow)
         self.resolution = datetime.timedelta(days=1)
         return self
@@ -248,9 +249,11 @@ class Time(object):
         when = match.group(0).lower()
         if when == 'noon':
             hour = 12
-        else:
-            assert when == 'midnight'
+        elif when == 'midnight':
             hour = 0
+        else:
+            raise AssertionError('Not noon nor midnight.')
+
         dtnow = now.asDatetime(tzinfo).replace(
             minute=0, second=0, microsecond=0)
         dtthen = dtnow.replace(hour=hour)
