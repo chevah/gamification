@@ -39,6 +39,10 @@ AUTHOR_ALIASES = {
     'bgola': ['bruno.gola'],
     }
 
+AUTHOR_HANDICAP = {
+    'dumol': 1.33,
+    'adi': 0.66,
+    }
 
 class Factor(dict):
     """
@@ -157,12 +161,18 @@ class HiscoresPage(Element):
                 suffix = 'rd'
             else:
                 suffix = 'th'
+
+            handicap = AUTHOR_HANDICAP.get(author, '')
+            if handicap:
+                handicap = str(handicap)
+
             yield oneRowTag.clone().fillSlots(
                 rank=str(pos) + suffix,
                 color=color,
                 bang="!" * max(0, 4-pos),
                 total=str(score),
                 author=author,
+                handicap=handicap
                 )
 
 
@@ -210,7 +220,8 @@ def getscores(actions):
     result = []
     for author, score in scores.items():
         # The scores are rounded by conversion to `int`.
-        result.append((int(score), author))
+        handicap = AUTHOR_HANDICAP.get(author, 1)
+        result.append((int(score * handicap), author))
 
     return sorted(result, reverse=True)
 

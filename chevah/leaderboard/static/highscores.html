@@ -9,7 +9,6 @@
     body {
         font-family: "Press Start 2P";
         letter-spacing: 4px;
-        word-spacing: 0.2em;
         background-color: black;
         color: white;
     }
@@ -39,7 +38,10 @@
         <td style="text-align: right; padding-right: 1em; width: 3em">
             <t:slot name="rank" />
         </td>
-        <td style="width: 10em;"><t:slot name="author" /></td>
+        <td style="width: 10em;">
+            <t:slot name="author" />
+            <span style="font-size: 10px"><t:slot name="handicap" /></span>
+        </td>
         <td style="text-align: right; width: 7em;"><t:slot name="total" /></td>
         <td style="width: 3em;"> &#xa0;<t:slot name="bang" /></td>
     </tr>
@@ -63,6 +65,10 @@
         <td colspan="4" style="font-size: 12;" width="5px;">
         <br style="line-height: 40px;" />
         <t:transparent t:render="footer" />
+        <div>
+        When computing the final score, the handicap is taken into account,
+        as noted after the author's name.
+        </div>
         <div class="bonus">
             <p style="text-align: center">~ BONUS ~</p>
             <p>
