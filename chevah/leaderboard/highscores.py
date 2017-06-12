@@ -7,7 +7,7 @@ import sqlite3
 import os
 from itertools import chain, count, groupby
 from operator import itemgetter
-from datetime import timedelta
+from datetime import datetime, timedelta
 
 
 from twisted.web.template import Element, XMLFile, renderer, tags, flatten
@@ -308,7 +308,6 @@ def _getTicketActions(start, end):
         actions = []
         comment = None
         for ticket, time, author, field, _, newvalue in localChanges:
-
             author = author.lower()
 
             if field == 'resolution':
@@ -327,6 +326,10 @@ def _getTicketActions(start, end):
             elif field == 'comment':
                 # An action was done to the ticket.
                 comment = newvalue
+
+                if not comment:
+                    # Not a real comment, just a change without a comment.
+                    continue
 
                 if author == 'pqm':
                     if comment.startswith('Branch landed on master.'):
@@ -564,7 +567,13 @@ if __name__ == '__main__':
     import sys
     CONFIGURATION['trac-db'] = (sys.argv[1],)
     CONFIGURATION['irc-logs'] = sys.argv[2]
-    start, end = monthRangeAround(Time())
+    try:
+        y, m, d = map(int, sys.argv[3].split("-"))
+        target_time = Time.fromDatetime(datetime(year=y, month=m, day=d))
+    except KeyError:
+        target_time = Time()
+
+    start, end = monthRangeAround(target_time)
     actions = list(computeActions(start, end))
     pprint.pprint(actions)
     pprint.pprint(getscores(actions))

@@ -30,7 +30,7 @@ To launch the Leaderboard server use:
 
 To see the report for this month:
 
-    make report
+    make report TIME=YYYY-MM-DD
 
 
 Manual testing IRC plugins

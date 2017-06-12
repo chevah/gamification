@@ -1,3 +1,7 @@
+
+# Default time for report.
+TIME ?= `date -I`
+
 all: test
 	
 
@@ -19,7 +23,7 @@ run:
 
 report:
 	@build/bin/python -m chevah.leaderboard.highscores \
-		build/trac.db build/irc-logs/
+		build/trac.db build/irc-logs/ $(TIME)
 
 lint:
 	@build/bin/pyflakes chevah/ scripts/
