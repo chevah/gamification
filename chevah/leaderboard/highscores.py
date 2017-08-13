@@ -9,7 +9,7 @@ from itertools import chain, count, groupby
 from operator import itemgetter
 from datetime import datetime, timedelta
 
-
+import toml
 from twisted.web.template import Element, XMLFile, renderer, tags, flatten
 from twisted.python.filepath import FilePath
 
@@ -17,32 +17,20 @@ from chevah.leaderboard.extime import Time
 
 LINK_STYLE = "text-decoration: none; color: white;"
 
+# Base configuration structure.
+# This acts as a singleton and is updated at runtime.
 CONFIGURATION = {
     'trac-db': ('no/such/path/define-a-trac-db',),
     'irc-logs': 'no/such/path/logs/',
+    'handicaps': {},
+    'aliases': {}
     }
 
 
 UNKNOWN_OWNER = 'UNKNOWN'
 IGNORED_AUTHORS = [
-    'chevah-robot',
     UNKNOWN_OWNER,
     ]
-
-
-AUTHOR_ALIASES = {
-    'adi': ['adiroiban', 'adi roiban', 'adi.roiban'],
-    'hcs': ['hcs0', 'Hannah Suarez hcs0', 'hannah.suarez'],
-    'laura': ['laurici', 'laura.gheorghiu'],
-    'dumol': ['mișu moldovan', 'misu.moldovan'],
-    'alibotean': ['adrian.libotean'],
-    'bgola': ['bruno.gola'],
-    }
-
-AUTHOR_HANDICAP = {
-    'dumol': 1.33,
-    'adi': 0.66,
-    }
 
 
 class Factor(dict):
@@ -160,7 +148,7 @@ class HiscoresPage(Element):
             else:
                 suffix = 'th'
 
-            handicap = AUTHOR_HANDICAP.get(author, '')
+            handicap = CONFIGURATION['handicaps'].get(author, '')
             if handicap:
                 handicap = str(handicap)
 
@@ -208,6 +196,7 @@ def getscores(actions):
     tiebreaker = count()
     scores = {}
     for (action, author) in actions:
+        author = _resolveAuthor(author)
         scores[author] = (
             scores.get(author, 0) +
             _factors[action].points +
@@ -217,7 +206,7 @@ def getscores(actions):
     result = []
     for author, score in scores.items():
         # The scores are rounded by conversion to `int`.
-        handicap = AUTHOR_HANDICAP.get(author, 1)
+        handicap = CONFIGURATION['handicaps'].get(author, 1)
         result.append((int(score * handicap), author))
 
     return sorted(result, reverse=True)
@@ -483,7 +472,7 @@ def _getIRCGitHubAction(line):
     except IndexError:
         return None
 
-    return (CARPE_DIEM_COMMIT, _resolveAuthor(author))
+    return (CARPE_DIEM_COMMIT, author)
 
 
 def _getIRCBotAction(line):
@@ -502,7 +491,7 @@ def _getIRCBotAction(line):
     except IndexError:
         return None
 
-    return (SUPPORT_MESSAGE, _resolveAuthor(author))
+    return (SUPPORT_MESSAGE, author)
 
 
 def _getIRCCommentAuthor(line):
@@ -515,6 +504,8 @@ def _getIRCCommentAuthor(line):
     except IndexError:
         return None
 
+    # We do an early name resolution as irc comments are aggregated to get
+    # actions.
     return _resolveAuthor(author)
 
 
@@ -525,7 +516,7 @@ def _resolveAuthor(alias):
     We will do a partial match on the alias.
     """
     alias = alias.lower()
-    for global_author, aliases in AUTHOR_ALIASES.items():
+    for global_author, aliases in CONFIGURATION['aliases'].items():
         for candidate in [global_author] + aliases:
             if candidate in alias:
                 return global_author
@@ -561,14 +552,30 @@ def renderPage(time, output):
     # this Deferred.
     flatten(None, page, output)
 
+
+def load_configuration(path):
+    """
+    Read the configuration file from `path` and update the internal
+    configuration.
+    """
+    config = toml.load(path)['chevah']['leaderboard']
+    CONFIGURATION['trac-db'] = (config['trac_db'],)
+    CONFIGURATION['irc-logs'] = config['irc_logs']
+    CONFIGURATION['handicaps'] = config.get('handicaps', {})
+    CONFIGURATION['aliases'] = config.get('aliases', {})
+
+    for author in config.get('ignored_authors', []):
+        IGNORED_AUTHORS.append(author)
+
+
 if __name__ == '__main__':
     # Show debugging info for current month.
     import pprint
     import sys
-    CONFIGURATION['trac-db'] = (sys.argv[1],)
-    CONFIGURATION['irc-logs'] = sys.argv[2]
+
+    load_configuration(sys.argv[1])
     try:
-        y, m, d = map(int, sys.argv[3].split("-"))
+        y, m, d = map(int, sys.argv[2].split("-"))
         target_time = Time.fromDatetime(datetime(year=y, month=m, day=d))
     except KeyError:
         target_time = Time()

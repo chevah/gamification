@@ -15,22 +15,20 @@ import sys
 
 from twisted.scripts.twistd import run
 
-from chevah.leaderboard.highscores import CONFIGURATION
+from chevah.leaderboard.highscores import load_configuration
 
 
 if __name__ == '__main__':
 
-    if len(sys.argv) < 3:
+    if len(sys.argv) < 2:
         raise AssertionError(
-            'Launch script with at least the path to the Trac DB.')
+            'Launch script with at least the path to the configuration.')
 
-    # Pass the trac credentials in a safer way.
-    CONFIGURATION['trac-db'] = (sys.argv[1],)
-    CONFIGURATION['irc-logs'] = sys.argv[2]
+    load_configuration(sys.argv[1])
 
     base_arguments = []
     web_arguments = []
-    for argument in sys.argv[3:]:
+    for argument in sys.argv[2:]:
         if (
             argument.startswith('--pidfile') or
             argument.startswith('--nodaemon')

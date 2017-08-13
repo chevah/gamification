@@ -17,13 +17,13 @@ deps: env
 	@build/bin/pip install -Ue '.[dev]'
 
 run:
-	@build/bin/python \
-		scripts/start-chevah-leaderboard.py \
-		build/trac.db build/irc-logs/ --nodaemon
+	@build/bin/python scripts/start-chevah-leaderboard.py \
+		build/leaderboard.toml --nodaemon
 
 report:
+	@echo "Reporting for $(TIME)"
 	@build/bin/python -m chevah.leaderboard.highscores \
-		build/trac.db build/irc-logs/ $(TIME)
+		build/leaderboard.toml $(TIME)
 
 lint:
 	@build/bin/pyflakes chevah/ scripts/
