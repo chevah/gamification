@@ -1,7 +1,7 @@
 from setuptools import Command, find_packages, setup
 import os
 
-VERSION = '0.5.0'
+VERSION = '0.5.1'
 
 
 class PublishCommand(Command):
@@ -45,6 +45,7 @@ distribution = setup(
     scripts=['scripts/start-chevah-leaderboard.py'],
     install_requires=[
         'klein==17.2',
+        'toml==0.9.2',
         ],
     extras_require = {
         'dev': [

@@ -18,7 +18,8 @@ deps: env
 
 run:
 	@build/bin/python scripts/start-chevah-leaderboard.py \
-		build/leaderboard.toml --nodaemon
+		build/leaderboard.toml \
+		--port=tcp:8080:interface=127.0.0.1 --nodaemon
 
 report:
 	@echo "Reporting for $(TIME)"
